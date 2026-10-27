@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Open VSX Explorer</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--p1:#101624;--p2:#172033;--line:#243049;--ink:#e8edf7;--mute:#8d9bb5;--teal:#2dd4bf;--pink:#f472b6;--amber:#fbbf24;--blue:#6aa7ff;--acc:var(--teal)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;overflow-x:hidden}
+a{color:var(--teal)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:8px}
+/* aurora */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;background:radial-gradient(1200px 600px at 50% -10%,#14213d 0,transparent 70%),var(--bg)}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.38;animation:drift 22s ease-in-out infinite alternate}
+.aurora i:nth-child(1){width:520px;height:520px;background:var(--teal);left:-120px;top:-80px}
+.aurora i:nth-child(2){width:600px;height:600px;background:var(--pink);right:-160px;top:12%;animation-duration:28s;animation-delay:-8s;opacity:.28}
+.aurora i:nth-child(3){width:480px;height:480px;background:var(--blue);left:30%;bottom:-200px;animation-duration:25s;animation-delay:-14s;opacity:.3}
+.aurora i:nth-child(4){width:340px;height:340px;background:var(--amber);right:20%;bottom:5%;animation-duration:31s;opacity:.16}
+@keyframes drift{to{transform:translate(80px,60px) scale(1.15)}}
+.grain{position:fixed;inset:0;z-index:-1;opacity:.05;pointer-events:none;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:3px 3px}
+.wrap{max-width:1480px;margin:0 auto;padding:0 clamp(16px,3.2vw,52px)}
+/* nav */
+nav{display:flex;align-items:center;gap:14px;padding:22px 0}
+.logo{font-weight:800;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo b{width:30px;height:30px;border-radius:9px;background:conic-gradient(from 200deg,var(--teal),var(--blue),var(--pink),var(--amber),var(--teal));display:block;animation:spin 9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+nav .sp{flex:1}
+.pill{border:1px solid var(--line);background:rgba(16,22,36,.7);backdrop-filter:blur(8px);border-radius:999px;padding:7px 16px;cursor:pointer;transition:border-color .2s,background .2s}
+.pill:hover{border-color:var(--teal)}
+.pill[aria-pressed=true]{background:var(--pink);border-color:var(--pink);color:#1a0a12;font-weight:700}
+/* hero */
+.hero{padding:34px 0 10px;text-align:center}
+h1{font-size:clamp(2.4rem,6vw,4.6rem);line-height:1.02;letter-spacing:-.04em;margin:0 auto 16px;font-weight:800;max-width:15em;background:linear-gradient(100deg,#fff 20%,#9fe9dc 45%,#f9a8d4 70%,#fde68a);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% 100%;animation:shine 8s ease-in-out infinite alternate}
+@keyframes shine{to{background-position:100% 0}}
+.sub{color:var(--mute);margin:0 auto 30px;max-width:36em;font-size:1.08rem}
+.sbox{position:relative;max-width:720px;margin:0 auto}
+.sbox input{width:100%;height:60px;padding:0 70px 0 56px;border-radius:18px;border:1.5px solid var(--line);background:rgba(16,22,36,.85);backdrop-filter:blur(10px);font-size:1.05rem;transition:border-color .2s,box-shadow .3s}
+.sbox input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 5px rgba(45,212,191,.16),0 10px 50px rgba(45,212,191,.18)}
+.sbox svg{position:absolute;z-index:1;pointer-events:none;left:19px;top:19px;width:22px;height:22px;stroke:#aab6cc}
+.sbox kbd{z-index:1;position:absolute;right:16px;top:17px;border:1px solid var(--line);border-radius:7px;padding:1px 9px;color:var(--mute);background:var(--p1)}
+.stats{display:flex;justify-content:center;gap:44px;margin:30px 0 8px;flex-wrap:wrap}
+.stats div{text-align:center}
+.stats b{display:block;font-size:2rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stats span{color:var(--mute);font-size:.9rem}
+/* marquee */
+.mq{margin:26px 0 6px;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.mq-t{display:flex;gap:14px;width:max-content;animation:mq 50s linear infinite}
+.mq:hover .mq-t{animation-play-state:paused}
+@keyframes mq{to{transform:translateX(-50%)}}
+.mq button{border:1px solid var(--line);background:var(--p1);border-radius:16px;padding:8px 18px 8px 8px;display:flex;align-items:center;gap:10px;cursor:pointer;white-space:nowrap;transition:transform .2s,border-color .2s}
+.mq button:hover{transform:translateY(-3px);border-color:var(--pink)}
+.mq .ico{width:34px;height:34px;border-radius:10px;font-size:1rem}
+/* toolbar */
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:34px 0 18px;position:sticky;top:10px;z-index:5;padding:12px 14px;border:1px solid var(--line);border-radius:20px;background:rgba(10,14,24,.78);backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.chip{border:1px solid var(--line);background:rgba(16,22,36,.7);border-radius:999px;padding:6px 15px;cursor:pointer;font-size:.93rem;color:var(--mute);transition:all .18s}
+.chip:hover{color:var(--ink);border-color:var(--c,var(--teal))}
+.chip[aria-pressed=true]{background:var(--c,var(--teal));border-color:var(--c,var(--teal));color:#07100f;font-weight:700}
+select{height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--p1);cursor:pointer}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{width:42px;height:40px;border:0;background:var(--p1);cursor:pointer;color:var(--mute)}
+.seg button[aria-pressed=true]{background:var(--p2);color:var(--teal)}
+.count{color:var(--mute);margin:0 0 14px;min-height:1.5em}
+/* grid */
+ul.grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+.card{--h:180;position:relative;display:flex;flex-direction:column;gap:12px;height:100%;padding:20px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(160deg,var(--p2),var(--p1));cursor:pointer;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .3s}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(380px circle at var(--mx,50%) var(--my,0%),hsl(var(--h) 90% 60%/.2),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none}
+.card:hover{transform:translateY(-5px);border-color:hsl(var(--h) 70% 55%);box-shadow:0 18px 50px hsl(var(--h) 80% 50%/.18)}
+.card:hover::before{opacity:1}
+.card.in{animation:pop .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*40ms)}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.top{display:flex;gap:14px;align-items:center}
+.ico{width:60px;height:60px;border-radius:16px;flex:none;display:grid;place-items:center;font-weight:800;font-size:1.5rem;color:hsl(var(--h,180) 90% 78%);background:linear-gradient(135deg,hsl(var(--h,180) 55% 22%),hsl(calc(var(--h,180) + 50) 55% 14%));overflow:hidden;box-shadow:inset 0 0 0 1px hsl(var(--h,180) 60% 50%/.35)}
+.ico img{width:100%;height:100%;object-fit:contain;display:block}
+.card h2{margin:0;font-size:1.08rem;line-height:1.25;overflow-wrap:anywhere}
+.ns{color:var(--mute);font-size:.86rem}
+.ns em{font-style:normal;color:var(--teal)}
+.card p{margin:0;color:#aab6cc;font-size:.93rem;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:.86rem;color:var(--mute)}
+.meta b{color:var(--ink)}
+.star{color:var(--amber)}
+.bar2{height:5px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar2 i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,hsl(var(--h) 90% 60%),hsl(calc(var(--h) + 60) 90% 65%));transform-origin:left;animation:grow .9s .2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.acts{position:absolute;right:12px;top:12px;display:flex;gap:6px;z-index:2}.fav,.cmp{width:34px;height:34px;border-radius:50%;border:0;background:rgba(8,11,18,.6);cursor:pointer;font-size:1.05rem;color:var(--mute);transition:transform .2s,color .2s,background .2s}.cmp[aria-pressed=true]{color:var(--teal);background:rgba(45,212,191,.2)}ul.grid:not(.rows) .card .top>div:last-child{padding-right:76px}
+.fav:hover,.cmp:hover{transform:scale(1.2)}
+.fav[aria-pressed=true]{color:var(--pink);animation:beat .35s}
+@keyframes beat{50%{transform:scale(1.5)}}
+ul.grid.rows{grid-template-columns:1fr;gap:10px}
+ul.grid.rows .card{flex-direction:row;align-items:center;padding:14px 100px 14px 16px}
+ul.grid.rows .card p{-webkit-line-clamp:1}
+ul.grid.rows .top{width:300px;flex:none}
+ul.grid.rows .meta{flex-direction:column;align-items:flex-end;gap:2px;min-width:130px}
+ul.grid.rows .bar2{display:none}
+.sk{height:210px;border-radius:22px;background:linear-gradient(100deg,var(--p1) 30%,var(--p2) 50%,var(--p1) 70%) 0 0/300% 100%;animation:sh 1.3s linear infinite}
+@keyframes sh{to{background-position:-300% 0}}
+.msg{grid-column:1/-1;padding:34px;border:1.5px dashed var(--line);border-radius:20px;color:var(--mute);text-align:center}
+.msg button,.more{margin-top:12px;padding:10px 26px;border-radius:12px;border:1.5px solid var(--teal);background:transparent;color:var(--teal);cursor:pointer;font-weight:700;transition:all .2s}
+.msg button:hover,.more:hover{background:var(--teal);color:#07100f}
+.more{display:block;margin:30px auto 90px}
+footer{text-align:center;color:var(--mute);padding:0 0 50px;font-size:.88rem}
+/* drawer */
+.ov{position:fixed;inset:0;background:rgba(4,6,10,.65);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s;z-index:10}
+.ov.on{opacity:1;pointer-events:auto}
+.dr{--h:180;position:fixed;top:0;right:0;bottom:0;width:min(920px,100%);background:var(--p1);border-left:1px solid var(--line);box-shadow:-30px 0 90px rgba(0,0,0,.6);transform:translateX(104%);transition:transform .4s cubic-bezier(.2,.85,.2,1);z-index:11;display:flex;flex-direction:column}
+.dr.on{transform:none}
+.dh{position:relative;display:flex;gap:18px;align-items:center;padding:26px 30px;border-bottom:1px solid var(--line);background:radial-gradient(600px 200px at 0 0,hsl(var(--h) 80% 50%/.22),transparent 70%)}
+.dh .ico{width:78px;height:78px;font-size:2rem;border-radius:20px}
+.dh h2{margin:0;font-size:1.6rem;line-height:1.15;letter-spacing:-.02em}
+.dh p{margin:4px 0 0;color:var(--mute);font-size:.95rem;max-width:44em}
+.x{margin-left:auto;align-self:flex-start;flex:none;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--p2);cursor:pointer;font-size:1.3rem;transition:transform .25s,border-color .2s}
+.x:hover{transform:rotate(90deg);border-color:var(--pink)}
+.chp{display:flex;gap:10px;flex-wrap:wrap;padding:16px 30px 0}
+.chp span{background:var(--p2);border:1px solid var(--line);border-radius:12px;padding:5px 13px;font-size:.88rem;color:var(--mute)}
+.chp b{color:var(--ink)}
+.tabs{display:flex;gap:4px;padding:6px 24px 0;border-bottom:1px solid var(--line);margin-top:10px}
+.tab{background:none;border:0;padding:12px 16px;cursor:pointer;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px;font-weight:600;transition:color .2s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--teal);border-color:var(--teal)}
+.db{overflow:auto;padding:26px 30px 50px;flex:1;scroll-behavior:smooth}
+.db>*{animation:fade .35s both}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}}
+.inst{display:flex;gap:10px;align-items:center;background:#0a0f1a;border:1px solid var(--line);border-radius:14px;padding:10px 12px 10px 16px;margin-bottom:26px;flex-wrap:wrap}
+.inst code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;color:var(--teal);background:none}
+.btn{border:0;background:var(--teal);color:#06100e;border-radius:9px;padding:8px 16px;cursor:pointer;font-weight:700;text-decoration:none;font-size:.92rem;transition:filter .2s}
+.btn:hover{filter:brightness(1.15)}
+.btn.alt{background:var(--p2);color:var(--ink);border:1px solid var(--line)}
+.doc{max-width:74ch;overflow-wrap:anywhere;color:#d3dbea}
+.doc h1,.doc h2,.doc h3,.doc h4{color:#fff;line-height:1.25;margin:1.7em 0 .5em;letter-spacing:-.01em}
+.doc h1{font-size:1.8rem}.doc h2{font-size:1.45rem;padding-bottom:.3em;border-bottom:1px solid var(--line)}.doc h3{font-size:1.15rem}
+.doc>:first-child{margin-top:0}
+.doc img{max-width:100%;height:auto;border-radius:10px}
+.doc pre{background:#0a0f1a;border:1px solid var(--line);padding:16px;border-radius:12px;overflow-x:auto;font-size:.88rem}
+.doc code{background:#0a0f1a;padding:2px 6px;border-radius:6px;font-size:.9em;color:#ffd7a0}
+.doc pre code{background:none;padding:0;color:#cfe3ff}
+.doc blockquote{margin:1em 0;padding:2px 18px;border-left:4px solid var(--pink);color:var(--mute)}
+.doc table{border-collapse:collapse;display:block;overflow-x:auto}
+.doc td,.doc th{border:1px solid var(--line);padding:7px 12px;text-align:left}
+.doc th{background:var(--p2)}
+.doc hr{border:0;border-top:1px solid var(--line)}
+dl.info{display:grid;grid-template-columns:max-content 1fr;gap:12px 28px;margin:0}
+dl.info dt{color:var(--mute)}dl.info dd{margin:0;overflow-wrap:anywhere}
+.tag{display:inline-block;background:var(--p2);border:1px solid var(--line);border-radius:8px;padding:1px 10px;margin:0 6px 6px 0;font-size:.88rem}
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,40px);background:var(--teal);color:#06100e;font-weight:700;padding:10px 22px;border-radius:12px;opacity:0;transition:all .3s;z-index:20;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+[hidden]{display:none!important}
+.hist{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:14px;font-size:.88rem;color:var(--mute)}
+.hist .chip{padding:3px 12px;font-size:.85rem}
+.tray{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;padding:10px 14px;border-radius:18px;background:rgba(16,22,36,.94);backdrop-filter:blur(14px);border:1px solid var(--line);box-shadow:0 14px 44px rgba(0,0,0,.55);animation:fade .3s;max-width:calc(100% - 24px)}
+.tray .tag{margin:0}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.modal{position:fixed;inset:0;z-index:15;background:rgba(4,6,10,.72);backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px;animation:fade .25s}
+.mbox{position:relative;width:min(980px,100%);max-height:90vh;overflow:auto;background:var(--p1);border:1px solid var(--line);border-radius:22px;padding:26px 28px}
+.mbox h2{margin:0 0 18px;letter-spacing:-.02em}
+.mbox .x{position:absolute;right:16px;top:16px}
+.ct{width:100%;border-collapse:collapse;display:block;overflow-x:auto}
+.ct th,.ct td{padding:12px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:150px}
+.ct td:first-child,.ct th:first-child{color:var(--mute);white-space:nowrap;min-width:0;font-weight:400}
+.ct .best{color:var(--teal);font-weight:700}
+.ct .ico{width:46px;height:46px;font-size:1.1rem;margin-bottom:8px}
+.rv{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--p2);margin-bottom:10px}
+.rv p{margin:8px 0 0;color:#c4cfe3}
+.toc{margin:0 0 22px;border:1px solid var(--line);border-radius:14px;background:var(--p2);padding:2px 16px}
+.toc summary{cursor:pointer;padding:10px 0;font-weight:600}
+.toc[open]{max-height:320px;overflow:auto}
+.toc button{display:block;width:100%;text-align:left;background:none;border:0;padding:5px 0;color:var(--mute);cursor:pointer}
+.toc button:hover{color:var(--teal)}
+button.tag{color:var(--teal);cursor:pointer;font:inherit;font-size:.88rem}
+button.tag:hover{border-color:var(--teal)}
+@media (min-width:1500px){ul.grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}}
+@media (max-width:1100px){ul.grid.rows .top{width:240px}}
+@media (max-width:760px){.hero{padding-top:14px}.stats{gap:22px}.stats b{font-size:1.5rem}.sbox input{height:54px}.sbox kbd{display:none}.sbox svg{top:16px}ul.grid{grid-template-columns:1fr}ul.grid.rows .card{flex-direction:column;align-items:stretch;padding:16px}ul.grid.rows .top{width:auto}ul.grid.rows .meta{flex-direction:row;align-items:center}.bar{top:6px;padding:10px}.chips{flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chip{white-space:nowrap}.dh{padding:16px;gap:12px}.dh .ico{width:56px;height:56px;font-size:1.4rem}.dh h2{font-size:1.2rem}.dh p{display:none}.db{padding:16px}.chp{padding:12px 16px 0}.tabs{padding:6px 8px 0;overflow-x:auto}.tab{padding:10px 12px;white-space:nowrap}.inst{padding:10px}dl.info{grid-template-columns:1fr;gap:2px}dl.info dd{margin-bottom:10px}nav .pill:last-child{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="grain"></div>
+
+<div class="wrap">
+  <nav>
+    <div class="logo"><b></b>Open VSX Explorer</div><div class="sp"></div>
+    <button class="pill" id="rnd" title="Buka ekstensi acak">Acak</button>
+    <button class="pill" id="favBtn" aria-pressed="false">♥ Favorit <span id="favN">0</span></button>
+    <a class="pill" href="https://open-vsx.org" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">open-vsx.org</a>
+  </nav>
+
+  <section class="hero">
+    <h1>Temukan ekstensi terbaik untuk editor Anda</h1>
+    <p class="sub">Jelajahi ribuan ekstensi langsung dari registry Open VSX. Klik satu ekstensi untuk membaca dokumentasi lengkapnya.</p>
+    <div class="sbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Cari ekstensi: python, flutter, tema gelap…" autocomplete="off" aria-label="Cari ekstensi">
+      <kbd>/</kbd>
+    </div>
+    <div class="hist" id="hist"></div>
+    <div class="stats">
+      <div><b id="sTot">–</b><span>ekstensi tersedia</span></div>
+      <div><b id="sTop">–</b><span>unduhan ekstensi teratas</span></div>
+      <div><b id="sShow">–</b><span>hasil pencarian ini</span></div>
+    </div>
+    <div class="mq" aria-label="Ekstensi populer"><div class="mq-t" id="mq"></div></div>
+  </section>
+
+  <div class="bar">
+    <div class="chips" id="chips" role="group" aria-label="Kategori"></div>
+    <select id="sort" aria-label="Urutkan">
+      <option value="downloadCount">Paling banyak diunduh</option>
+      <option value="averageRating">Rating tertinggi</option>
+      <option value="timestamp">Terbaru diperbarui</option>
+      <option value="relevance">Paling relevan</option>
+    </select>
+    <div class="seg" role="group" aria-label="Tampilan">
+      <button id="vGrid" aria-pressed="true" title="Kisi" aria-label="Tampilan kisi">▦</button>
+      <button id="vRows" aria-pressed="false" title="Daftar" aria-label="Tampilan daftar">☰</button>
+    </div>
+  </div>
+  <div class="count" id="count" aria-live="polite"></div>
+  <ul class="grid" id="list"></ul>
+  <button class="more" id="more" hidden>Muat lebih banyak</button>
+  <footer>Data dari API publik Open VSX · Tekan <b>/</b> untuk mencari, <b>←</b> <b>→</b> untuk pindah ekstensi, <b>Esc</b> untuk menutup</footer>
+</div>
+
+<div class="ov" id="ov"></div>
+<aside class="dr" id="dr" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dt">
+  <div class="dh">
+    <div class="ico" id="di"></div>
+    <div><h2 id="dt"></h2><div class="ns" id="dn"></div><p id="dd"></p></div>
+    <button class="x" id="x" aria-label="Tutup">×</button>
+  </div>
+  <div class="chp" id="chp"></div>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-t="readme" aria-selected="true">Dokumentasi</button>
+    <button class="tab" role="tab" data-t="changelog" aria-selected="false">Changelog</button>
+    <button class="tab" role="tab" data-t="info" aria-selected="false">Detail</button>
+    <button class="tab" role="tab" data-t="versi" aria-selected="false">Versi</button>
+    <button class="tab" role="tab" data-t="ulasan" aria-selected="false">Ulasan</button>
+  </div>
+  <div class="db" id="db"></div>
+</aside>
+<div class="tray" id="tray" hidden><b>Bandingkan:</b><span id="trayList"></span><button class="btn" id="cmpGo" disabled>Bandingkan</button><button class="btn alt" id="cmpClr">Kosongkan</button></div>
+<div class="modal" id="cm" hidden><div class="mbox"><button class="x" id="cx" aria-label="Tutup">×</button><h2>Perbandingan ekstensi</h2><div id="ct"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API='https://open-vsx.org/api';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf=new Intl.NumberFormat('id-ID',{notation:'compact',maximumFractionDigits:1});
+const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
+const CATS=[['Semua','',null],['AI','AI','#f472b6'],['Programming Languages','Programming Languages','#2dd4bf'],['Themes','Themes','#fbbf24'],['Snippets','Snippets','#6aa7ff'],['Linters','Linters','#f472b6'],['Formatters','Formatters','#2dd4bf'],['Debuggers','Debuggers','#fbbf24'],['Testing','Testing','#6aa7ff'],['Data Science','Data Science','#f472b6'],['Notebooks','Notebooks','#2dd4bf'],['Other','Other','#fbbf24']];
+const st={q:'',sort:'downloadCount',cat:'',offset:0,total:0,token:0,favs:false,max:1,busy:false};
+const cmp=[],META={};
+const SIZE=24;
+let favs={};
+try{favs=JSON.parse(localStorage.getItem('vsx-fav')||'{}')}catch{}
+const saveFavs=()=>{try{localStorage.setItem('vsx-fav',JSON.stringify(favs))}catch{}$('#favN').textContent=Object.keys(favs).length};
+saveFavs();
+const ROUTES=[u=>u,u=>'https://corsproxy.io/?url='+encodeURIComponent(u),u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u)];
+let route=0;
+async function apiGet(url,type='json'){
+  let err;
+  for(let k=0;k<ROUTES.length;k++){
+    const i=(route+k)%ROUTES.length;let tm;
+    try{
+      const r=await Promise.race([fetch(ROUTES[i](url)),new Promise((_,j)=>{tm=setTimeout(()=>j(new Error('waktu habis')),9000)})]);clearTimeout(tm);
+      if(!r.ok){const e=new Error('HTTP '+r.status);e.final=(r.status===404||r.status===400);throw e}
+      const out=type==='json'?await r.json():await r.text();
+      route=i;return out;
+    }catch(e){clearTimeout(tm);err=e;if(e.final)throw e}
+  }
+  throw err;
+}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
+
+function countUp(el,to,fmt){const t0=performance.now();const f=n=>fmt?nf.format(n):Math.round(n).toLocaleString('id-ID');(function s(t){const p=Math.min(1,(t-t0)/1100);el.textContent=f(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(s)})(t0)}
+
+$('#chips').innerHTML=CATS.map((c,i)=>`<button class="chip" style="--c:${c[2]||'#2dd4bf'}" aria-pressed="${i==0}" data-c="${esc(c[1])}">${esc(c[0])}</button>`).join('');
+$('#chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;st.cat=b.dataset.c;st.favs=false;syncFav();document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===b));load(true)};
+$('#sort').onchange=e=>{st.sort=e.target.value;load(true)};
+let t;$('#q').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value.trim();st.favs=false;syncFav();load(true)},350)};
+$('#more').onclick=()=>load(false);
+let hist=[];try{hist=JSON.parse(localStorage.getItem('vsx-hist')||'[]')}catch{}
+function addHist(q){q=(q||'').trim();if(q.length<2)return;hist=[q,...hist.filter(x=>x!==q)].slice(0,6);try{localStorage.setItem('vsx-hist',JSON.stringify(hist))}catch{}renderHist()}
+function renderHist(){$('#hist').innerHTML=hist.length?'Terakhir dicari: '+hist.map(h=>`<button class="chip" data-h="${esc(h)}">${esc(h)}</button>`).join('')+'<button class="chip" data-h="" title="Hapus riwayat">Hapus</button>':''}
+$('#hist').onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;if(b.dataset.h===''){hist=[];try{localStorage.removeItem('vsx-hist')}catch{}renderHist();return}$('#q').value=b.dataset.h;st.q=b.dataset.h;st.favs=false;syncFav();load(true)};
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')addHist(e.target.value)});
+renderHist();
+$('#rnd').onclick=()=>{const c=[...document.querySelectorAll('#list .card')];if(c.length)openExt(c[Math.floor(Math.random()*c.length)].dataset.k,true);else toast('Belum ada ekstensi yang dimuat')};
+$('#vGrid').onclick=()=>view(false);$('#vRows').onclick=()=>view(true);
+function view(r){$('#list').classList.toggle('rows',r);$('#vRows').setAttribute('aria-pressed',r);$('#vGrid').setAttribute('aria-pressed',!r)}
+$('#favBtn').onclick=()=>{st.favs=!st.favs;syncFav();load(true)};
+function syncFav(){$('#favBtn').setAttribute('aria-pressed',st.favs)}
+addEventListener('keydown',e=>{
+  if(e.key==='/'&&!/INPUT|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('#q').focus()}
+  if(e.key==='Escape'){if(!$('#cm').hidden)$('#cm').hidden=true;else closeExt()}
+  if($('#dr').classList.contains('on')&&(e.key==='ArrowRight'||e.key==='ArrowLeft')&&!/INPUT|SELECT/.test(document.activeElement.tagName)){
+    const ks=[...document.querySelectorAll('#list .card')].map(c=>c.dataset.k),i=ks.indexOf(curKey),n=ks[i+(e.key==='ArrowRight'?1:-1)];
+    if(i>=0&&n)openExt(n,true);
+  }
+});
+
+function icon(e){const l=(e.displayName||e.name||'?')[0].toUpperCase();const u=e.files&&e.files.icon;return u?`<img src="${esc(u)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(l)}'))">`:esc(l)}
+function cardHTML(e,i){
+  const k=e.namespace+'/'+e.name,on=!!favs[k];META[k]=e;
+  return `<article class="card in" tabindex="0" role="button" data-k="${esc(k)}" style="--i:${i};--h:${hue(k)}">
+    <div class="acts"><button class="cmp" aria-label="Bandingkan" title="Bandingkan" aria-pressed="${cmp.includes(k)}">⇄</button><button class="fav" aria-label="Favorit" title="Favorit" aria-pressed="${on}">${on?'♥':'♡'}</button></div>
+    <div class="top"><div class="ico">${icon(e)}</div><div><h2>${esc(e.displayName||e.name)}</h2><div class="ns"><em>${esc(e.namespace)}</em>${e.version?' · v'+esc(e.version):''}${e.verified?' · ✓ terverifikasi':''}</div></div></div>
+    <p>${esc(e.description||'Tanpa deskripsi.')}</p>
+    <div class="bar2"><i style="width:${Math.max(3,(e.downloadCount||0)/st.max*100)}%"></i></div>
+    <div class="meta"><span><b>${nf.format(e.downloadCount||0)}</b> unduhan</span>${e.averageRating?`<span><span class="star">★</span> <b>${e.averageRating.toFixed(1)}</b> (${e.reviewCount})</span>`:'<span>Belum ada rating</span>'}</div></article>`;
+}
+function marquee(list){
+  const h=list.slice(0,14).map(e=>`<button data-k="${esc(e.namespace+'/'+e.name)}" style="--h:${hue(e.namespace+'/'+e.name)}"><div class="ico">${icon(e)}</div>${esc(e.displayName||e.name)}</button>`).join('');
+  $('#mq').innerHTML=h+h;
+}
+$('#mq').onclick=e=>{const b=e.target.closest('button');if(b)openExt(b.dataset.k,true)};
+
+async function load(reset){
+  const my=++st.token,L=$('#list');
+  if(reset){st.offset=0;$('#more').hidden=true;$('#count').textContent='Memuat…';L.innerHTML='<li class="sk"></li>'.repeat(8)}
+  if(st.favs){
+    const arr=Object.entries(favs).map(([k,v])=>({namespace:k.split('/')[0],name:k.split('/')[1],displayName:v.n,files:{icon:v.i},downloadCount:v.d||0}));
+    st.max=Math.max(1,...arr.map(a=>a.downloadCount));
+    L.innerHTML=arr.length?arr.map((e,i)=>`<li>${cardHTML(e,i)}</li>`).join(''):'<li class="msg">Belum ada favorit. Tekan ikon ♡ pada kartu ekstensi untuk menyimpannya di sini.</li>';
+    $('#count').innerHTML=`${arr.length} ekstensi favorit `+(arr.length?'<button class="btn alt" id="favCopy">Salin perintah instal semua</button>':'');
+    const fc=$('#favCopy');if(fc)fc.onclick=()=>navigator.clipboard.writeText('code '+arr.map(e=>'--install-extension '+e.namespace+'.'+e.name).join(' ')).then(()=>toast('Perintah instal disalin'));return;
+  }
+  const p=new URLSearchParams({size:SIZE,offset:st.offset,sortBy:st.sort,sortOrder:'desc'});st.busy=true;
+  if(st.q)p.set('query',st.q);if(st.cat)p.set('category',st.cat);
+  try{
+    const d=await apiGet(`${API}/-/search?${p}`);if(my!==st.token)return;
+    if(d.error)throw new Error(d.error);
+    if(reset){L.innerHTML='';st.max=Math.max(1,...d.extensions.map(e=>e.downloadCount||0))}
+    d.extensions.forEach((e,i)=>{const li=document.createElement('li');li.innerHTML=cardHTML(e,i);L.append(li);favs[e.namespace+'/'+e.name]&&(favs[e.namespace+'/'+e.name].d=e.downloadCount)});
+    st.total=d.totalSize;st.offset+=d.extensions.length;
+    $('#count').textContent=d.totalSize?`${d.totalSize.toLocaleString('id-ID')} ekstensi ditemukan`:'';
+    countUp($('#sShow'),d.totalSize);if(!st.q&&!st.cat)countUp($('#sTot'),d.totalSize);
+    if(reset&&!st.q&&!st.cat&&st.sort==='downloadCount'&&d.extensions.length){marquee(d.extensions);countUp($('#sTop'),d.extensions[0].downloadCount,true)}
+    if(!d.totalSize)L.innerHTML='<li class="msg">Tidak ada ekstensi yang cocok. Coba kata kunci lain atau pilih kategori “Semua”.</li>';
+    $('#more').hidden=st.offset>=st.total;st.busy=false;
+  }catch(err){
+    if(my!==st.token)return;
+    st.busy=false;L.innerHTML=`<li class="msg">Gagal mengambil data dari open-vsx.org (${esc(err.message)}), termasuk lewat jalur cadangan.<br>Coba <a href="${API}/-/search?size=1" target="_blank" rel="noopener">buka API ini di tab baru</a>. Jika di sana juga gagal, open-vsx.org tidak bisa diakses dari jaringan Anda (coba ganti jaringan atau DNS). Jika file dibuka lewat pratinjau editor (webview VS Code, Live Preview), buka di Chrome atau Edge.<br><button id="retry">Coba lagi</button></li>`;
+    $('#count').textContent='';$('#retry').onclick=()=>load(true);
+  }
+}
+
+$('#list').onclick=e=>{
+  const c=e.target.closest('.card');if(!c)return;
+  if(e.target.closest('.cmp')){const k=c.dataset.k,i=cmp.indexOf(k);if(i>=0)cmp.splice(i,1);else if(cmp.length<3)cmp.push(k);else toast('Maksimal 3 ekstensi');cmpUpdate();return}
+  if(e.target.closest('.fav')){
+    const k=c.dataset.k,b=e.target.closest('.fav');
+    if(favs[k]){delete favs[k]}else{favs[k]={n:c.querySelector('h2').textContent,i:(c.querySelector('.ico img')||{}).src||''}}
+    b.setAttribute('aria-pressed',!!favs[k]);b.textContent=favs[k]?'♥':'♡';saveFavs();
+    if(st.favs)load(true);return;
+  }
+  openExt(c.dataset.k,true);
+};
+$('#list').onkeydown=e=>{if(e.key==='Enter'&&e.target.classList.contains('card'))openExt(e.target.dataset.k,true)};
+$('#list').onpointermove=e=>{const c=e.target.closest('.card');if(!c)return;const r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')};
+
+// ---------- drawer ----------
+let cur=null,curKey='',tab='readme',last=null;const cache={};
+async function openExt(key,push){
+  if(!$('#dr').classList.contains('on'))last=document.activeElement;
+  $('#ov').classList.add('on');$('#dr').classList.add('on');$('#dr').setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  if(push)history.replaceState(null,'','#'+key);
+  const [ns,name]=key.split('/');cur=null;curKey=key;if(st.q)addHist(st.q);
+  $('#dr').style.setProperty('--h',hue(key));$('#di').style.setProperty('--h',hue(key));
+  $('#dt').textContent=name;$('#dn').textContent=ns;$('#dd').textContent='';$('#chp').innerHTML='';$('#di').textContent=name[0].toUpperCase();
+  $('#db').innerHTML='<div class="sk" style="height:240px"></div>';
+  setTab('readme',true);
+  try{
+    const d=cache[key]||(cache[key]=await apiGet(`${API}/${ns}/${name}`));
+    if(d.error)throw new Error(d.error);
+    cur=d;
+    $('#dt').textContent=d.displayName||d.name;
+    $('#dn').innerHTML=`<em>${esc(d.namespaceDisplayName||d.namespace)}</em> · ${esc(ns)}.${esc(name)}`;
+    $('#dd').textContent=d.description||'';
+    $('#di').innerHTML=icon(d);
+    $('#chp').innerHTML=[['Unduhan',(d.downloadCount||0).toLocaleString('id-ID')],['Rating',d.averageRating?'★ '+d.averageRating.toFixed(1)+' ('+d.reviewCount+')':'–'],['Versi','v'+d.version],['Lisensi',d.license||'–']].map(x=>`<span>${x[0]}: <b>${esc(x[1])}</b></span>`).join('')+'<button class="btn alt" id="share">Salin tautan</button>';
+    $('#share').onclick=()=>navigator.clipboard.writeText(location.href.split('#')[0]+'#'+key).then(()=>toast('Tautan disalin'));
+    renderTab();
+  }catch(err){$('#db').innerHTML=`<div class="msg">Gagal memuat detail (${esc(err.message)}).<br><a href="https://open-vsx.org/extension/${esc(ns)}/${esc(name)}" target="_blank" rel="noopener">Buka di open-vsx.org</a></div>`}
+  $('#x').focus();
+}
+function closeExt(){
+  if(!$('#dr').classList.contains('on'))return;
+  $('#ov').classList.remove('on');$('#dr').classList.remove('on');$('#dr').setAttribute('aria-hidden','true');
+  document.body.style.overflow='';history.replaceState(null,'',location.pathname+location.search);
+  if(last&&document.contains(last))last.focus();
+}
+$('#x').onclick=closeExt;$('#ov').onclick=closeExt;
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.t)};
+$('#db').onclick=e=>{
+  const a=e.target.closest('[data-id]');if(a){const t=document.getElementById(a.dataset.id);if(t)t.scrollIntoView({behavior:'smooth',block:'start'});return}
+  const o=e.target.closest('[data-open]');if(o)openExt(o.dataset.open,true);
+};
+function setTab(t,quiet){tab=t;document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));if(!quiet)renderTab()}
+
+async function renderTab(){
+  const d=cur;if(!d)return;const db=$('#db'),my=tab;
+  if(tab==='ulasan'){
+    db.innerHTML='<div class="sk" style="height:200px"></div>';
+    try{
+      const r=await apiGet(`${API}/${d.namespace}/${d.name}/reviews`);if(cur!==d||tab!==my)return;
+      const L=r.reviews||[];
+      db.innerHTML=L.length?L.map(v=>`<div class="rv"><div><span class="star">${'★'.repeat(v.rating||0)}${'☆'.repeat(Math.max(0,5-(v.rating||0)))}</span> <b>${esc(v.title||'')}</b></div><div class="ns">${esc((v.user&&v.user.loginName)||'anonim')}${v.timestamp?' · '+new Date(v.timestamp).toLocaleDateString('id-ID',{dateStyle:'medium'}):''}</div><p>${esc(v.comment||'')}</p></div>`).join(''):'<div class="msg">Belum ada ulasan untuk ekstensi ini.</div>';
+    }catch(err){db.innerHTML=`<div class="msg">Ulasan tidak dapat dimuat (${esc(err.message)}).</div>`}
+    return;
+  }
+  if(tab==='info'){
+    const rows=[['Pengembang',d.publishedBy&&d.publishedBy.loginName],['Versi terbaru',d.version],['Lisensi',d.license],['Diperbarui',d.timestamp&&new Date(d.timestamp).toLocaleDateString('id-ID',{dateStyle:'long'})],['Butuh VS Code',d.engines&&d.engines.vscode],['Platform',d.targetPlatform]].filter(r=>r[1]);
+    let h='<dl class="info">'+rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('');
+    [['Repositori',d.repository],['Beranda',d.homepage],['Laporan bug',d.bugs]].forEach(([n,u])=>{if(u&&/^https?:/.test(u))h+=`<dt>${n}</dt><dd><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></dd>`});
+    if(d.categories&&d.categories.length)h+=`<dt>Kategori</dt><dd>${d.categories.map(c=>`<span class="tag">${esc(c)}</span>`).join('')}</dd>`;
+    if(d.tags&&d.tags.length)h+=`<dt>Tag</dt><dd>${d.tags.slice(0,24).map(c=>`<span class="tag">${esc(c)}</span>`).join('')}</dd>`;
+    const rel=(t,a)=>a&&a.length?`<dt>${t}</dt><dd>${a.map(x=>`<button class="tag" data-open="${esc(x.namespace)}/${esc(x.extension)}">${esc(x.namespace)}.${esc(x.extension)}</button>`).join('')}</dd>`:'';
+    h+=rel('Dependensi',d.dependencies)+rel('Paket ekstensi',d.bundledExtensions);
+    db.innerHTML=h+'</dl>';return;
+  }
+  if(tab==='versi'){
+    const v=Object.keys(d.allVersions||{}).filter(x=>x!=='latest');
+    db.innerHTML=v.length?`<p style="color:var(--mute);margin-top:0">${v.length} versi tersedia di registry.</p>`+v.slice(0,80).map((x,i)=>`<span class="tag"${i==0?' style="border-color:var(--teal);color:var(--teal)"':''}>${esc(x)}</span>`).join(''):'<div class="msg">Daftar versi tidak tersedia.</div>';return;
+  }
+  const url=d.files&&d.files[tab];
+  if(!url){db.innerHTML=`<div class="msg">Ekstensi ini tidak menyertakan ${tab==='readme'?'dokumentasi':'changelog'}.</div>`;return}
+  db.innerHTML='<div class="sk" style="height:240px"></div>';
+  try{
+    const txt=await apiGet(url,'text');
+    if(cur!==d||tab!==my)return;
+    const cmd=`code --install-extension ${d.namespace}.${d.name}`;
+    const head=tab==='readme'?`<div class="inst"><code>${esc(cmd)}</code><button class="btn" id="cp">Salin</button>${d.files.download?`<a class="btn alt" href="${esc(d.files.download)}">Unduh .vsix</a>`:''}<a class="btn alt" href="https://open-vsx.org/extension/${esc(d.namespace)}/${esc(d.name)}" target="_blank" rel="noopener">Buka di Open VSX</a></div>`:'';
+    const body=md(txt,url),tc=md.toc.filter(x=>x[0]<=3);
+    const toc=tc.length>2?`<details class="toc"><summary>Daftar isi (${tc.length})</summary>${tc.map(x=>`<button data-id="${x[1]}" style="padding-left:${(x[0]-1)*14}px">${x[2]}</button>`).join('')}</details>`:'';
+    db.innerHTML=head+toc+`<div class="doc">${body}</div>`;
+    const cp=$('#cp');if(cp)cp.onclick=()=>navigator.clipboard.writeText(cmd).then(()=>toast('Perintah instal disalin'));
+  }catch(err){db.innerHTML=`<div class="msg">Dokumen tidak dapat dimuat (${esc(err.message)}).<br><a href="https://open-vsx.org/extension/${esc(d.namespace)}/${esc(d.name)}" target="_blank" rel="noopener">Baca di open-vsx.org</a></div>`}
+}
+
+// ---------- markdown mini (semua teks di-escape) ----------
+function md(src,base){
+  const toc=[];const keep=[];const hold=h=>'\u0000'+(keep.push(h)-1)+'\u0000';
+  const U=u=>{try{const x=new URL(u.replace(/&amp;/g,'&'),base);return /^https?:$/.test(x.protocol)?esc(x.href):null}catch{return null}};
+  src=src.replace(/\r/g,'').replace(/<!--[\s\S]*?-->/g,'');
+  src=src.replace(/```[^\n]*\n([\s\S]*?)```/g,(m,c)=>hold(`<pre><code>${esc(c)}</code></pre>`));
+  src=src.replace(/`([^`\n]+)`/g,(m,c)=>hold(`<code>${esc(c)}</code>`));
+  src=src.replace(/<img[^>]*?src=["']([^"']+)["'][^>]*>/gi,(m,u)=>{const a=U(esc(u));return a?hold(`<img src="${a}" alt="" loading="lazy">`):''});
+  src=src.replace(/<\/?[a-z][^>]*>/gi,'');
+  src=esc(src);
+  const inl=s=>s
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g,(m,a,u)=>{const x=U(u);return x?`<img src="${x}" alt="${a}" loading="lazy">`:a})
+    .replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g,(m,a,u)=>{const x=U(u);return x?`<a href="${x}" target="_blank" rel="noopener">${a}</a>`:a})
+    .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[\s(])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>');
+  const L=src.split('\n');let o='',i=0;
+  while(i<L.length){
+    const l=L[i];let m;
+    if(!l.trim()){i++;continue}
+    if(/^\u0000\d+\u0000$/.test(l.trim())){o+=l.trim();i++;continue}
+    if(m=l.match(/^(#{1,6})\s+(.*)$/)){const n=Math.min(m[1].length,4),id='h'+toc.length;toc.push([n,id,m[2].replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[*_]/g,'').trim()]);o+=`<h${n} id="${id}">${inl(m[2])}</h${n}>`;i++;continue}
+    if(/^\s*([-*_]\s*){3,}$/.test(l)){o+='<hr>';i++;continue}
+    if(/^\s*&gt;/.test(l)){let b=[];while(i<L.length&&/^\s*&gt;/.test(L[i]))b.push(L[i++].replace(/^\s*&gt;\s?/,''));o+=`<blockquote>${inl(b.join(' '))}</blockquote>`;continue}
+    if(/^\s*\|/.test(l)&&/^\s*\|?[\s:-]+\|/.test(L[i+1]||'')){const rows=[];while(i<L.length&&/^\s*\|/.test(L[i]))rows.push(L[i++]);const c=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(x=>inl(x.trim()));o+='<table><tr>'+c(rows[0]).map(x=>`<th>${x}</th>`).join('')+'</tr>'+rows.slice(2).map(r=>'<tr>'+c(r).map(x=>`<td>${x}</td>`).join('')+'</tr>').join('')+'</table>';continue}
+    if(/^\s*([-*+]|\d+\.)\s+/.test(l)){const ord=/^\s*\d+\./.test(l);let it=[];while(i<L.length&&/^\s*([-*+]|\d+\.)\s+/.test(L[i]))it.push(L[i++].replace(/^\s*([-*+]|\d+\.)\s+/,''));o+=`<${ord?'ol':'ul'}>${it.map(x=>`<li>${inl(x)}</li>`).join('')}</${ord?'ol':'ul'}>`;continue}
+    let p=[];while(i<L.length&&L[i].trim()&&!/^(#{1,6}\s|\s*([-*+]|\d+\.)\s|\s*&gt;|\s*\|)/.test(L[i]))p.push(L[i++]);
+    o+=`<p>${inl(p.join(' '))}</p>`;
+  }
+  toc.forEach(t=>t[2]=t[2].replace(/\u0000(\d+)\u0000/g,(m,n)=>keep[n].replace(/<[^>]+>/g,'')));md.toc=toc;
+  return o.replace(/\u0000(\d+)\u0000/g,(m,n)=>keep[n]);
+}
+
+function cmpUpdate(){
+  $('#tray').hidden=!cmp.length;
+  $('#trayList').innerHTML=cmp.map(k=>`<span class="tag">${esc((META[k]&&(META[k].displayName||META[k].name))||k)}</span>`).join('');
+  $('#cmpGo').disabled=cmp.length<2;
+  document.querySelectorAll('.card').forEach(c=>{const b=c.querySelector('.cmp');if(b)b.setAttribute('aria-pressed',cmp.includes(c.dataset.k))});
+}
+async function runCmp(){
+  $('#cm').hidden=false;$('#ct').innerHTML='<div class="sk" style="height:200px"></div>';
+  const ds=await Promise.all(cmp.map(k=>cache[k]?Promise.resolve(cache[k]):apiGet(`${API}/${k}`).then(d=>cache[k]=d).catch(()=>META[k])));
+  const R=[['Unduhan',d=>d.downloadCount||0,v=>v.toLocaleString('id-ID'),1],['Rating',d=>d.averageRating||0,v=>v?'★ '+v.toFixed(1):'–',1],['Jumlah ulasan',d=>d.reviewCount||0,v=>v,0],['Versi terbaru',d=>d.version||'–',v=>v,0],['Lisensi',d=>d.license||'–',v=>v,0],['Diperbarui',d=>d.timestamp||'',v=>v?new Date(v).toLocaleDateString('id-ID',{dateStyle:'medium'}):'–',0],['Terverifikasi',d=>d.verified?'Ya':'Tidak',v=>v,0],['Kategori',d=>(d.categories||[]).join(', ')||'–',v=>v,0]];
+  let h='<table class="ct"><tr><th></th>'+ds.map((d,i)=>`<th><div class="ico" style="--h:${hue(cmp[i])}">${icon(d)}</div>${esc(d.displayName||d.name)}<div class="ns">${esc(d.namespace)}</div></th>`).join('')+'</tr>';
+  R.forEach(([n,g,f,b])=>{const vs=ds.map(g),mx=b?Math.max(...vs):0;h+=`<tr><td>${n}</td>`+vs.map(v=>`<td class="${b&&v===mx&&v>0?'best':''}">${esc(f(v))}</td>`).join('')+'</tr>'});
+  $('#ct').innerHTML=h+'</table>';
+}
+$('#cmpGo').onclick=runCmp;$('#cmpClr').onclick=()=>{cmp.length=0;cmpUpdate()};
+$('#cx').onclick=()=>{$('#cm').hidden=true};$('#cm').onclick=e=>{if(e.target.id==='cm')$('#cm').hidden=true};
+if('IntersectionObserver' in window)new IntersectionObserver(es=>{if(es[0].isIntersecting&&!$('#more').hidden&&!st.busy&&!st.favs)load(false)},{rootMargin:'500px'}).observe($('#more'));
+addEventListener('hashchange',()=>{const h=decodeURIComponent(location.hash.slice(1));if(!h)closeExt();else if(/^[^/]+\/[^/]+$/.test(h))openExt(h,false)});
+load(true);
+{const h=decodeURIComponent(location.hash.slice(1));if(/^[^/]+\/[^/]+$/.test(h))openExt(h,false)}
+</script>
+</body>
+</html>
